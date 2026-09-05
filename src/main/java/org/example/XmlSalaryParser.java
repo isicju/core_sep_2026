@@ -1,4 +1,4 @@
-package src.main.java.org.example;
+package org.example;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;

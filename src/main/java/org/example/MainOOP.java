@@ -10,7 +10,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.IntSummaryStatistics;
 import java.util.List;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartUtils;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.category.DefaultCategoryDataset;
 
+import java.io.File;
+import java.io.IOException;
 public class MainOOP {
 
     private static final Logger log = LoggerFactory.getLogger(MainOOP.class);
@@ -41,8 +48,37 @@ public class MainOOP {
         List<SalaryRecord> salaryRecords = salaryRecordParser.parse(file);
 
         printAnalytics(salaryRecords);
+        drawSalaryChart(salaryRecords);
     }
 
+    private static void drawSalaryChart(List<SalaryRecord> records) {
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+
+        for (SalaryRecord r : records) {
+            dataset.addValue(r.getSalary(), "Salary", r.getName());
+        }
+
+        JFreeChart barChart = ChartFactory.createBarChart(
+                "Salary by Employee",   // chart title
+                "Employee",             // x-axis label
+                "Salary",               // y-axis label
+                dataset,
+                PlotOrientation.VERTICAL,
+                false,                  // include legend
+                true,                   // tooltips
+                false                   // URLs
+        );
+
+        File outputFile = new File("charts/salary-chart.png");
+        outputFile.getParentFile().mkdirs();
+
+        try {
+            ChartUtils.saveChartAsPNG(outputFile, barChart, 800, 600);
+            log.info("Chart saved to {}", outputFile.getAbsolutePath());
+        } catch (IOException e) {
+            log.error("Failed to save chart", e);
+        }
+    }
 
     private static void printAnalytics(List<SalaryRecord> records) {
         if (records == null || records.isEmpty()) {

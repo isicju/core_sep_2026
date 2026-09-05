@@ -5,6 +5,7 @@ build/
 !**/src/test/**/build/
 out
 logs
+charts
 ### IntelliJ IDEA ###
 .idea
 *.iws

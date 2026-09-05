@@ -1,5 +1,8 @@
 package org.example;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -10,19 +13,17 @@ import java.util.List;
 
 public class MainOOP {
 
-    private enum TYPE {
-        TXT, XML
-    }
+    private static final Logger log = LoggerFactory.getLogger(MainOOP.class);
 
     public static void main(String[] args) throws IOException {
         if (args.length != 2) {
-            System.err.println("File path isn't specified! Usage: java Main <file> <type>");
+            log.error("File path isn't specified! Usage: java Main <file> <type>");
             System.exit(1);
         }
 
         File file = new File(args[0]);
         if (!file.exists()) {
-            System.err.println("File path isn't specified! Usage: java Main <file> <type>");
+            log.error("File path isn't specified! Usage: java Main <file> <type>");
             System.exit(1);
         }
 
@@ -33,7 +34,7 @@ public class MainOOP {
         } else if (args[1].equals("TXT")) {
             salaryRecordParser = new TextSalaryParser();
         } else {
-            System.err.println("Not supported type, available types are XML, TXT");
+            log.error("Not supported type, available types are XML, TXT");
             System.exit(1);
         }
 
@@ -45,7 +46,7 @@ public class MainOOP {
 
     private static void printAnalytics(List<SalaryRecord> records) {
         if (records == null || records.isEmpty()) {
-            System.out.println("No records to analyze.");
+            log.info("No records to analyze.");
             return;
         }
 
@@ -73,17 +74,17 @@ public class MainOOP {
 
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
-        System.out.println("========== Salary Analytics ==========");
-        System.out.printf("%-25s %d%n", "Total records:", stats.getCount());
-        System.out.printf("%-25s %,.2f%n", "Average salary:", stats.getAverage());
-        System.out.printf("%-25s %,d%n", "Total salary paid:", stats.getSum());
-        System.out.println("---------------------------------------");
-        System.out.printf("%-25s %,d (%s)%n", "Max salary:", stats.getMax(), highestPaid.getName());
-        System.out.printf("%-25s %,d (%s)%n", "Min salary:", stats.getMin(), lowestPaid.getName());
-        System.out.println("---------------------------------------");
-        System.out.printf("%-25s %s%n", "Earliest record date:", earliestDate.format(fmt));
-        System.out.printf("%-25s %s%n", "Latest record date:", latestDate.format(fmt));
-        System.out.println("=======================================");
+        log.info("========== Salary Analytics ==========");
+        log.info(String.format("%-25s %d", "Total records:", stats.getCount()));
+        log.info(String.format("%-25s %,.2f", "Average salary:", stats.getAverage()));
+        log.info(String.format("%-25s %,d", "Total salary paid:", stats.getSum()));
+        log.info("---------------------------------------");
+        log.info(String.format("%-25s %,d (%s)", "Max salary:", stats.getMax(), highestPaid.getName()));
+        log.info(String.format("%-25s %,d (%s)", "Min salary:", stats.getMin(), lowestPaid.getName()));
+        log.info("---------------------------------------");
+        log.info(String.format("%-25s %s", "Earliest record date:", earliestDate.format(fmt)));
+        log.info(String.format("%-25s %s", "Latest record date:", latestDate.format(fmt)));
+        log.info("=======================================");
     }
 
 }

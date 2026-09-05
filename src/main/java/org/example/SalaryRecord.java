@@ -1,3 +1,5 @@
+package src.main.java.org.example;
+
 import java.time.LocalDate;
 
 public class SalaryRecord {

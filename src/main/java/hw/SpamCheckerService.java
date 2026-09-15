@@ -11,7 +11,7 @@ import java.net.http.HttpResponse;
 public class SpamCheckerService {
 
     public static void main(String[] args) {
-        SpamCheckerService analyticsService = new SpamCheckerService("ВАШ_ОПЕН_РОУТЕР_КЛЮЧ");
+        SpamCheckerService analyticsService = new SpamCheckerService("");
         try {
             SpamCheckerService.SpamCheckResults results = analyticsService.verifySpam("Шлюхи возле тебя, поблизости всего 500 метров . Переходи по ссылке чтобы найти их!");
             SpamCheckerService.SpamCheckResults results1 = analyticsService.verifySpam("Резюме Василий Петров. Дата рождения 1978-06-05. Пожалуйста найдите детали в приложении");

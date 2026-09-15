@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Travel Ticket Generator</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            min-height: 100vh;
+            background: #eef2f6;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #1f2933;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 620px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 18px;
+        }
+
+        .header h1 {
+            margin: 0 0 6px;
+            font-size: 30px;
+        }
+
+        .header p {
+            margin: 0;
+            color: #697586;
+            font-size: 15px;
+        }
+
+        .card {
+            background: #ffffff;
+            border: 1px solid #dfe5eb;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 4px 18px rgba(20, 35, 50, 0.06);
+        }
+
+        .card-top {
+            height: 8px;
+            background: #2563eb;
+        }
+
+        .form {
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .section-title {
+            margin: 0 0 2px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #263442;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #465465;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            margin-top: 7px;
+            padding: 11px 12px;
+            border: 1px solid #cbd3dc;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #1f2933;
+            font-family: inherit;
+            font-size: 15px;
+            outline: none;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10);
+        }
+
+        textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        .choices {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .choice {
+            position: relative;
+        }
+
+        .choice input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .choice label {
+            display: block;
+            margin: 0;
+            padding: 15px;
+            border: 1px solid #cbd3dc;
+            border-radius: 9px;
+            cursor: pointer;
+            text-align: center;
+            background: #ffffff;
+            transition:
+                    border-color 0.15s ease,
+                    background 0.15s ease,
+                    box-shadow 0.15s ease;
+        }
+
+        .choice label:hover {
+            border-color: #9aa8b7;
+        }
+
+        .choice-name {
+            display: block;
+            font-size: 16px;
+            font-weight: 700;
+            color: #263442;
+        }
+
+        .choice-description {
+            display: block;
+            margin-top: 4px;
+            font-size: 12px;
+            font-weight: 400;
+            color: #7b8794;
+        }
+
+        .choice input:checked + label {
+            border-color: #2563eb;
+            background: #eff6ff;
+            box-shadow: 0 0 0 1px #2563eb;
+        }
+
+        .choice input:checked + label .choice-name {
+            color: #1d4ed8;
+        }
+
+        .luggage {
+            padding: 15px;
+            border: 1px solid #d7dee6;
+            border-radius: 9px;
+            background: #f8fafc;
+        }
+
+        .luggage-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .luggage-header input {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .luggage-header label {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .luggage-number {
+            margin-top: 14px;
+        }
+
+        .luggage-number input:disabled {
+            background: #e9edf1;
+            color: #8a96a3;
+            cursor: not-allowed;
+        }
+
+        .hint {
+            margin: 0;
+            font-size: 12px;
+            color: #7b8794;
+        }
+
+        .divider {
+            height: 1px;
+            background: #e5e9ee;
+        }
+
+        .submit-button {
+            width: 100%;
+            padding: 13px 18px;
+            border: 0;
+            border-radius: 8px;
+            background: #2563eb;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .submit-button:hover {
+            background: #1d4ed8;
+        }
+
+        .submit-button:disabled {
+            opacity: 0.65;
+            cursor: wait;
+        }
+
+        #status {
+            display: none;
+            margin-top: 18px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        #status.visible {
+            display: block;
+        }
+
+        @media (max-width: 560px) {
+            body {
+                padding: 20px 12px;
+            }
+
+            .form {
+                padding: 20px;
+            }
+
+            .row,
+            .choices {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>Travel Ticket</h1>
+        <p>Enter passenger information and generate a travel ticket.</p>
+    </div>
+
+    <div class="card">
+
+        <div class="card-top"></div>
+
+        <form id="form" class="form">
+
+            <!-- Travel type -->
+            <div class="section">
+                <p class="section-title">Travel type</p>
+
+                <div class="choices">
+
+                    <div class="choice">
+                        <input
+                                id="type-avia"
+                                name="type"
+                                type="radio"
+                                value="AVIA"
+                                required
+                        >
+
+                        <label for="type-avia">
+                            <span class="choice-name">AVIA</span>
+                            <span class="choice-description">
+                                Air travel
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="choice">
+                        <input
+                                id="type-railway"
+                                name="type"
+                                type="radio"
+                                value="RAILWAY"
+                                required
+                        >
+
+                        <label for="type-railway">
+                            <span class="choice-name">RAILWAY</span>
+                            <span class="choice-description">
+                                Railway travel
+                            </span>
+                        </label>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Passenger -->
+            <div class="section">
+                <p class="section-title">Passenger information</p>
+
+                <div class="row">
+
+                    <div>
+                        <label for="name">
+                            Name
+                            <input
+                                    id="name"
+                                    name="name"
+                                    type="text"
+                                    autocomplete="given-name"
+                                    required
+                            >
+                        </label>
+                    </div>
+
+                    <div>
+                        <label for="surname">
+                            Surname
+                            <input
+                                    id="surname"
+                                    name="surname"
+                                    type="text"
+                                    autocomplete="family-name"
+                                    required
+                            >
+                        </label>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Date of birth -->
+            <div class="section">
+
+                <label for="dob">
+                    Date of birth
+                    <input
+                            id="dob"
+                            name="dob"
+                            type="date"
+                            autocomplete="bday"
+                            required
+                    >
+                </label>
+
+            </div>
+
+            <!-- Comment -->
+            <div class="section">
+
+                <label for="comment">
+                    Comment
+                    <textarea
+                            id="comment"
+                            name="comment"
+                            placeholder="Additional information..."
+                            required
+                    ></textarea>
+                </label>
+
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Luggage -->
+            <div class="section">
+
+                <p class="section-title">Luggage</p>
+
+                <div class="luggage">
+
+                    <div class="luggage-header">
+
+                        <input
+                                id="has-luggage"
+                                name="has_luggage"
+                                type="checkbox"
+                                value="1"
+                        >
+
+                        <label for="has-luggage">
+                            Passenger has luggage
+                        </label>
+
+                    </div>
+
+                    <div class="luggage-number">
+
+                        <label for="luggage">
+                            Number of luggage items
+
+                            <input
+                                    id="luggage"
+                                    name="luggage"
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    value="0"
+                                    disabled
+                            >
+                        </label>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Output format -->
+            <div class="section">
+
+                <label for="file_type">
+                    Returned file type
+
+                    <select
+                            id="file_type"
+                            name="file_type"
+                            required
+                    >
+                        <option value="pdf">PDF</option>
+                        <option value="png">PNG</option>
+                    </select>
+                </label>
+
+                <p class="hint">
+                    Choose the format of the generated travel ticket.
+                </p>
+
+            </div>
+
+            <button
+                    id="submit-button"
+                    class="submit-button"
+                    type="submit"
+            >
+                Generate ticket
+            </button>
+
+        </form>
+
+    </div>
+
+    <div id="status"></div>
+
+</div>
+
+<script>
+    const form = document.getElementById("form");
+    const status = document.getElementById("status");
+    const submitButton = document.getElementById("submit-button");
+
+    const hasLuggage = document.getElementById("has-luggage");
+    const luggage = document.getElementById("luggage");
+
+    hasLuggage.addEventListener("change", () => {
+        luggage.disabled = !hasLuggage.checked;
+
+        if (hasLuggage.checked) {
+            luggage.value = "1";
+        } else {
+            luggage.value = "0";
+        }
+    });
+
+    form.addEventListener("submit", async (event) => {
+
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        event.preventDefault();
+
+        status.classList.add("visible");
+        status.textContent = "Generating ticket...";
+
+        submitButton.disabled = true;
+
+        const formData = new FormData(form);
+        const params = new URLSearchParams();
+
+        for (const [key, value] of formData.entries()) {
+            params.append(key, value);
+        }
+
+        /*
+         * A disabled input is not included in FormData.
+         * Always send a luggage value to the backend.
+         */
+        if (!hasLuggage.checked) {
+            params.set("luggage", "0");
+        }
+
+        try {
+            const response = await fetch("/api/generate", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: params.toString()
+            });
+
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(error);
+            }
+
+            const blob = await response.blob();
+
+            /*
+             * Prefer the filename supplied by the backend.
+             */
+            const disposition = response.headers.get(
+                "Content-Disposition"
+            );
+
+            let fileName = "travel-ticket";
+
+            if (disposition) {
+                const match = disposition.match(
+                    /filename="([^"]+)"/
+                );
+
+                if (match) {
+                    fileName = match[1];
+                }
+            }
+
+            if (fileName === "travel-ticket") {
+                const fileType = formData.get("file_type");
+                fileName += "." + fileType;
+            }
+
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement("a");
+
+            link.href = url;
+            link.download = fileName;
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            URL.revokeObjectURL(url);
+
+            status.textContent =
+                "Travel ticket generated successfully.";
+
+        } catch (error) {
+            console.error(error);
+
+            status.textContent =
+                "Error: " + error.message;
+
+        } finally {
+            submitButton.disabled = false;
+        }
+    });
+</script>
+
+</body>
+</html>

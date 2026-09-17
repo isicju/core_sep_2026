@@ -20,7 +20,6 @@ public class EmailNotificationService {
     }
 
     public void sendEmail(String toEmail, String content, byte[] reportBytes) {
-
         RestTemplate restTemplate = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();

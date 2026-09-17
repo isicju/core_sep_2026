@@ -27,20 +27,14 @@ public class Main implements Runnable {
     @Override
     public void run() {
         UserGenerator userGenerator = FakerUserGenerator.getInstance();
-        ObjectMapper mapper = new ObjectMapper();
+        UserStorage userStorage = new FileUserStorage();
+
         while (true) {
+            List<User> users = userGenerator.generateUsers(userCount);
+            userStorage.persistUsers(users);
             try {
-                File file = new File(System.currentTimeMillis() + "_data.txt");
-                file.createNewFile();
-                List<User> users = userGenerator.generateUsers(userCount);
-                Files.writeString(Path.of(file.getAbsolutePath()), mapper.writeValueAsString(users));
-                log.info("Generated {} users and saved to {}", userCount, file.getAbsolutePath());
                 Thread.sleep(sleepTime);
-            } catch (IOException e) {
-                log.error("Failed to generate user data", e);
-                break;
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
                 log.info("User generator interrupted");
                 break;
             }

@@ -42,7 +42,9 @@ public class Main implements Runnable {
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(pathToFolder)) {
             for (Path filePath : stream) {
+                log.info("analyzing {}", filePath.getFileName());
                 if (userStorage.fileWasAnalyzed(filePath)) {
+                    log.info("file {} was analyzed", filePath.getFileName());
                     continue;
                 }
                 List<User> usersFromFile = userReader.readUserFromFile(filePath);

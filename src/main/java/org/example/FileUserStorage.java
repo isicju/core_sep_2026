@@ -14,15 +14,17 @@ public class FileUserStorage implements UserStorage {
 
     private static final Logger log = LoggerFactory.getLogger(FileUserStorage.class);
     private ObjectMapper mapper;
+    private String folderName;
 
-    public FileUserStorage() {
+    public FileUserStorage(String folderName) {
         this.mapper = new ObjectMapper();
+        this.folderName = folderName;
     }
 
     @Override
     public void persistUsers(List<User> users) {
         try {
-            File file = new File(System.currentTimeMillis() + "_data.txt");
+            File file = new File(folderName + "/" + System.currentTimeMillis() + "_data.txt");
             file.createNewFile();
             Files.writeString(Path.of(file.getAbsolutePath()), mapper.writeValueAsString(users));
             log.info("Generated {} users and saved to {}", users, file.getAbsolutePath());

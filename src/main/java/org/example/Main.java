@@ -23,11 +23,13 @@ public class Main implements Runnable {
     private int userCount;
     @Option(names = {"--sleep_time", "--sleep-time"}, description = "Sleep time between generations in milliseconds", defaultValue = "30000")
     private long sleepTime;
+    @Option(names = {"--user_folder", "--user_folder"}, description = "Location of generated users", defaultValue = "users")
+    private String userFolder;
 
     @Override
     public void run() {
         UserGenerator userGenerator = FakerUserGenerator.getInstance();
-        UserStorage userStorage = new FileUserStorage();
+        UserStorage userStorage = new FileUserStorage(userFolder);
 
         while (true) {
             List<User> users = userGenerator.generateUsers(userCount);

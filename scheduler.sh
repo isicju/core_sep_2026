@@ -3,9 +3,9 @@
 set -uo pipefail
 
 JAR_PATH="build/libs/gradle_based-1.0-SNAPSHOT.jar"
-EMAIL_TO="isicju@gmail.com"
+EMAIL_TO="put your email"
 USER_FOLDER="/root/hw1/generator/core_sep_2026/users"
-EMAIL_AUTH_TOKEN="Basic ZTIwZmIyNTdmNDY5YzBiZDllNDMwYTRhZDJlMzdiNGE6MDYyMGUxMWM5NzQxZDM3YjYwNGY0NmZjYzAyMjNjMDI="
+EMAIL_AUTH_TOKEN="put email auth token (from group)"
 INTERVAL_SECONDS=30
 
 LOG_FILE="run_every_30s.log"

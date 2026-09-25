@@ -20,7 +20,7 @@ public class Api {
     public static void main(String[] args) {
         userListWithoutSorting = new ArrayList<>();
         // данные для загрузки лежат тут
-        //https://gist.githubusercontent.com/isicju/761203c098852ab6e3a90ab6b9d48241/raw/f1d640622c7cb1b4664ef6f47114cb23843b8f09/users.json
+        //https://gist.githubusercontent.com/isicju/f40e58017d64533a2660cf04285f6cb9/raw/5fde264d0758aab1df4afe92f33bd83ad3d7b9ad/gistfile1.txt
     }
 
     // O(1)

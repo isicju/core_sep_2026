@@ -1,34 +1,35 @@
 package org.example.hw.collections.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.util.Objects;
 
+
+@AllArgsConstructor
+@NoArgsConstructor
 @Builder
 @Data
 public class User {
-    private final Long id;
-    private final String name;
-    private final LocalDate birthDate;
-    private final String city;
-    private final String address;
-    private final String email;
-    private final String phone;
+    private Long id;
+    private String name;
+    private LocalDate birthDate;
+    private String city;
+    private String address;
+    private String email;
+    private String phone;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        User user = (User) o;
-        return Objects.equals(id, user.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(id);
+    public User(Long id, User source) {
+        this.id = id;
+        this.name = source.name;
+        this.birthDate = source.birthDate;
+        this.city = source.city;
+        this.address = source.address;
+        this.email = source.email;
+        this.phone = source.phone;
     }
 }
 

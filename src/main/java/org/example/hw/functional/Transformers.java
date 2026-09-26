@@ -6,15 +6,15 @@ import org.example.hw.functional.model.*;
 import java.util.Collection;
 
 public class Transformers {
-    private String findEmployeesBornAtThisYear(Collection<Employee> employees, int year){
+    private Employee findEmployeeBornAtThisYear(Collection<Employee> employees, int year){
         return null;
     }
 
-    private String findAllJobTitles(Collection<Job> jobs,Collection<Job> jobs2){
+    private Collection<String> findAllJobTitles(Collection<Job> jobs,Collection<Job> jobs2){
         return null;
     }
 
-    private String findAllNameWithoutDuplicatesFromBothList(Collection<Employee> employees,Collection<Employee> employees2){
+    private Collection<String> findAllNameWithoutDuplicatesFromBothList(Collection<Employee> employees,Collection<Employee> employees2){
         return null;
     }
 

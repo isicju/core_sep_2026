@@ -1,0 +1,8 @@
+services:
+  h2app:
+    image: hw2image:latest
+    container_name: hw2app
+    environment:
+      KEY: ${KEY}
+    ports:
+      - "6565:8080"

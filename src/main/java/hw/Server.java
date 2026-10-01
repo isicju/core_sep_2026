@@ -65,7 +65,7 @@ public class Server {
         server.setExecutor(null);
         server.start();
 
-        log.info("Server started: http://:" + InetAddress.getLocalHost().getHostAddress() + ":" + appPort + "/");
+        log.info("Server started: http://:" + InetAddress.getLoopbackAddress().getHostAddress() + ":" + appPort + "/");
     }
 
     private static void handleGenerate(HttpExchange exchange) throws IOException {

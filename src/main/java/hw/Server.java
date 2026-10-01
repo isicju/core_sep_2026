@@ -3,18 +3,60 @@ package hw;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import hw.exception.ExceptionRoute;
+import hw.exception.ExceptionRouter;
+import hw.model.ImageOutputType;
+import hw.model.TicketFactory;
+import hw.service.TickerValidator;
+import hw.service.TicketCalculator;
+import hw.service.image.ImageGeneratorLookup;
+import hw.service.image.PdfGenerator;
+import hw.service.image.PngGenerator;
+import hw.service.spam.DeepSeekSpamService;
+import hw.service.spam.SpamService;
+import hw.service.spam.SpamServiceLoggerProxy;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 public class Server {
 
+    static RequestProcessor requestProcessor;
+    static ExceptionRouter router;
+
     public static void main(String[] args) throws Exception {
-        HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
+        log.info("Staring application..");
+
+        String spamApiKey = System.getenv().get("KEY");
+        String port = System.getenv().get("PORT") == null ? "8080" : System.getenv().get("PORT");
+        Integer appPort = Integer.parseInt(port);
+        if (spamApiKey == null) {
+            System.err.println("Missing environment variable: KEY");
+            System.exit(1);
+        }
+
+        TicketFactory ticketFactory = new TicketFactory();
+        SpamService service = new SpamServiceLoggerProxy(new DeepSeekSpamService(""));
+        TickerValidator tickerValidator = new TickerValidator(service);
+        TicketCalculator ticketCalculator = new TicketCalculator();
+
+        ImageGeneratorLookup imageGeneratorFactory = new ImageGeneratorLookup(Map.of(
+                ImageOutputType.PDF, new PdfGenerator(),
+                ImageOutputType.PNG, new PngGenerator()
+        ));
+
+        requestProcessor = new RequestProcessor(ticketFactory, tickerValidator, ticketCalculator, imageGeneratorFactory);
+
+        router = new ExceptionRouter();
+
+        HttpServer server = HttpServer.create(new InetSocketAddress(appPort), 0);
 
         server.createContext("/api/generate", Server::handleGenerate);
         server.createContext("/", Server::handleStatic);
@@ -22,7 +64,7 @@ public class Server {
         server.setExecutor(null);
         server.start();
 
-        System.out.println("Server started: http://localhost:8080");
+        log.info("Server started: http://:" + InetAddress.getLocalHost().getHostAddress() + ":" + appPort + "/");
     }
 
     private static void handleGenerate(HttpExchange exchange) throws IOException {
@@ -36,26 +78,13 @@ public class Server {
                     exchange.getRequestBody().readAllBytes(),
                     StandardCharsets.UTF_8
             );
+            log.info("received new request: {}", body);
+
             Map<String, String> form = parseForm(body);
-            String type = form.get("type");
-            String name = form.get("name");
-            String surname = form.get("surname");
-            String dob = form.get("dob");
-            String comment = form.get("comment");
-            String hasLuggage = form.get("has_luggage");
-            String luggage = form.get("luggage");
+
             String fileType = form.get("file_type");
 
-            RequestProcessor requestProcessor = new RequestProcessor();
-
-            byte[] responseFileBytes = requestProcessor.processRequest(name,
-                    surname,
-                    dob,
-                    comment,
-                    hasLuggage,
-                    luggage,
-                    type,
-                    fileType);
+            byte[] responseFileBytes = requestProcessor.processRequest(form);
 
             String fileName = "result." + fileType;
             String contentType = "pdf".equals(fileType)
@@ -77,7 +106,9 @@ public class Server {
             }
 
         } catch (Exception e) {
-            sendText(exchange, 500, e.getMessage());
+            log.error("exception occurred: {}", e.getMessage());
+            ExceptionRoute route = router.route(e);
+            sendText(exchange, route.getCode(), route.getMessage());
         }
     }
 

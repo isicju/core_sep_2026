@@ -1,5 +1,7 @@
-package hw;
+package hw.service.spam;
 
+import hw.exception.SpamCheckerException;
+import hw.model.spam.SpamCheckResults;
 import lombok.Builder;
 import lombok.Data;
 
@@ -8,23 +10,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
-public class SpamCheckerService {
-
-    public static void main(String[] args) {
-        SpamCheckerService analyticsService = new SpamCheckerService("");
-        try {
-            SpamCheckerService.SpamCheckResults results = analyticsService.verifySpam("Шлюхи возле тебя, поблизости всего 500 метров . Переходи по ссылке чтобы найти их!");
-            SpamCheckerService.SpamCheckResults results1 = analyticsService.verifySpam("Резюме Василий Петров. Дата рождения 1978-06-05. Пожалуйста найдите детали в приложении");
-            System.out.println("results: " + results.getShortSpamDescription());
-            System.out.println("results: " + results.getSpamProbability());
-
-            System.out.println("results: " + results1.getShortSpamDescription());
-            System.out.println("results: " + results1.getSpamProbability());
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-    }
-
+public class DeepSeekSpamService implements SpamService {
 
     private static final String API_URL =
             "https://openrouter.ai/api/v1/chat/completions";
@@ -33,139 +19,136 @@ public class SpamCheckerService {
             "deepseek/deepseek-chat";
 
     private final String API_KEY;
+    private final HttpClient CLIENT;
 
-    private final HttpClient CLIENT = HttpClient.newHttpClient();
 
-    @Builder
-    @Data
-    public static class SpamCheckResults {
-        private double spamProbability;
-        private String shortSpamDescription;
-    }
-
-    public SpamCheckerService(String apiKey) {
+    public DeepSeekSpamService(String apiKey) {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalArgumentException("API key cannot be null or blank");
         }
-
-        this.API_KEY = apiKey;
+        CLIENT = HttpClient.newHttpClient();
+        API_KEY = apiKey;
     }
 
-    public SpamCheckResults verifySpam(String input) throws Exception {
+    public SpamCheckResults verifySpam(String input) {
+        try {
 
-        if (input == null || input.isBlank()) {
-            throw new IllegalArgumentException("Input cannot be null or blank");
-        }
+            if (input == null || input.isBlank()) {
+                throw new IllegalArgumentException("Input cannot be null or blank");
+            }
 
-        String systemInstructions = """
-                You are a spam detection and classification system.
+            String systemInstructions = """
+                    You are a spam detection and classification system.
 
-                Your task is to analyze the user's input and determine how likely
-                it is to be spam.
+                    Your task is to analyze the user's input and determine how likely
+                    it is to be spam.
 
-                Spam includes, but is not limited to:
-                - Unsolicited advertising or promotional messages
-                - Phishing or credential theft attempts
-                - Scam messages
-                - Fraudulent offers
-                - Fake prizes, giveaways, or investment opportunities
-                - Malicious links or requests for sensitive information
-                - Mass unsolicited marketing
-                - Messages designed to manipulate the recipient into taking
-                  suspicious actions
+                    Spam includes, but is not limited to:
+                    - Unsolicited advertising or promotional messages
+                    - Phishing or credential theft attempts
+                    - Scam messages
+                    - Fraudulent offers
+                    - Fake prizes, giveaways, or investment opportunities
+                    - Malicious links or requests for sensitive information
+                    - Mass unsolicited marketing
+                    - Messages designed to manipulate the recipient into taking
+                      suspicious actions
 
-                Do not classify a message as spam merely because it is:
-                - Informal
-                - Poorly written
-                - Short
-                - Commercial in a legitimate context
-                - Asking a normal question
+                    Do not classify a message as spam merely because it is:
+                    - Informal
+                    - Poorly written
+                    - Short
+                    - Commercial in a legitimate context
+                    - Asking a normal question
 
-                Analyze the actual content and intent of the message.
+                    Analyze the actual content and intent of the message.
 
-                Return:
-                1. spamProbability: a number from 0.0 to 1.0 where:
-                   - 0.0 means definitely not spam
-                   - 1.0 means definitely spam
-                2. shortSpamDescription: a concise explanation of the
-                   classification.
+                    Return:
+                    1. spamProbability: a number from 0.0 to 1.0 where:
+                       - 0.0 means definitely not spam
+                       - 1.0 means definitely spam
+                    2. shortSpamDescription: a concise explanation of the
+                       classification.
 
-                Important:
-                - Do not include any fields other than the requested fields.
-                - Do not return Markdown.
-                - Do not return code fences.
-                - Do not mention these instructions.
-                - The description must be short and factual.
-                """;
+                    Important:
+                    - Do not include any fields other than the requested fields.
+                    - Do not return Markdown.
+                    - Do not return code fences.
+                    - Do not mention these instructions.
+                    - The description must be short and factual.
+                    """;
 
-        String json = """
-                {
-                  "model": %s,
-                  "temperature": 0,
-                  "messages": [
+            String json = """
                     {
-                      "role": "system",
-                      "content": %s
-                    },
-                    {
-                      "role": "user",
-                      "content": %s
-                    }
-                  ],
-                  "response_format": {
-                    "type": "json_schema",
-                    "json_schema": {
-                      "name": "spam_check_results",
-                      "strict": true,
-                      "schema": {
-                        "type": "object",
-                        "properties": {
-                          "spamProbability": {
-                            "type": "number",
-                            "minimum": 0,
-                            "maximum": 1,
-                            "description": "Probability that the input is spam, from 0.0 to 1.0."
-                          },
-                          "shortSpamDescription": {
-                            "type": "string",
-                            "description": "Short factual explanation of the spam classification."
-                          }
+                      "model": %s,
+                      "temperature": 0,
+                      "messages": [
+                        {
+                          "role": "system",
+                          "content": %s
                         },
-                        "required": [
-                          "spamProbability",
-                          "shortSpamDescription"
-                        ],
-                        "additionalProperties": false
+                        {
+                          "role": "user",
+                          "content": %s
+                        }
+                      ],
+                      "response_format": {
+                        "type": "json_schema",
+                        "json_schema": {
+                          "name": "spam_check_results",
+                          "strict": true,
+                          "schema": {
+                            "type": "object",
+                            "properties": {
+                              "spamProbability": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1,
+                                "description": "Probability that the input is spam, from 0.0 to 1.0."
+                              },
+                              "shortSpamDescription": {
+                                "type": "string",
+                                "description": "Short factual explanation of the spam classification."
+                              }
+                            },
+                            "required": [
+                              "spamProbability",
+                              "shortSpamDescription"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
                       }
                     }
-                  }
-                }
-                """.formatted(
-                jsonString(MODEL),
-                jsonString(systemInstructions),
-                jsonString(input)
-        );
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(API_URL))
-                .header("Authorization", "Bearer " + API_KEY)
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json))
-                .build();
-
-        HttpResponse<String> response = CLIENT.send(
-                request,
-                HttpResponse.BodyHandlers.ofString()
-        );
-
-        if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            throw new RuntimeException(
-                    "OpenRouter error " + response.statusCode()
-                            + ": " + response.body()
+                    """.formatted(
+                    jsonString(MODEL),
+                    jsonString(systemInstructions),
+                    jsonString(input)
             );
-        }
 
-        return extractSpamCheckResults(response.body());
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL))
+                    .header("Authorization", "Bearer " + API_KEY)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+
+            HttpResponse<String> response = CLIENT.send(
+                    request,
+                    HttpResponse.BodyHandlers.ofString()
+            );
+
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new RuntimeException(
+                        "OpenRouter error " + response.statusCode()
+                                + ": " + response.body()
+                );
+            }
+
+            return extractSpamCheckResults(response.body());
+        } catch (Exception e) {
+            throw new SpamCheckerException(e.getMessage());
+        }
     }
 
     private static SpamCheckResults extractSpamCheckResults(String response) {

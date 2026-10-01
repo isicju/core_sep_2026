@@ -452,8 +452,8 @@
                             name="file_type"
                             required
                     >
-                        <option value="pdf">PDF</option>
-                        <option value="png">PNG</option>
+                        <option value="PDF">PDF</option>
+                        <option value="PNG">PNG</option>
                     </select>
                 </label>
 
@@ -524,6 +524,7 @@
          */
         if (!hasLuggage.checked) {
             params.set("luggage", "0");
+            params.set("has_luggage", "0")
         }
 
         try {

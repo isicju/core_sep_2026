@@ -43,7 +43,7 @@ public class Server {
         }
 
         TicketFactory ticketFactory = new TicketFactory();
-        SpamService service = new SpamServiceLoggerProxy(new DeepSeekSpamService(""));
+        SpamService service = new SpamServiceLoggerProxy(new DeepSeekSpamService(spamApiKey));
         TickerValidator tickerValidator = new TickerValidator(service);
         TicketCalculator ticketCalculator = new TicketCalculator();
 

@@ -37,11 +37,12 @@ public class Server {
         String spamApiKey = System.getenv().get("KEY");
         String port = System.getenv().get("PORT") == null ? "8080" : System.getenv().get("PORT");
         Integer appPort = Integer.parseInt(port);
+        log.info("port {}", port);
+
         if (spamApiKey == null) {
             System.err.println("Missing environment variable: KEY");
             System.exit(1);
         }
-
         TicketFactory ticketFactory = new TicketFactory();
         SpamService service = new SpamServiceLoggerProxy(new DeepSeekSpamService(spamApiKey));
         TickerValidator tickerValidator = new TickerValidator(service);

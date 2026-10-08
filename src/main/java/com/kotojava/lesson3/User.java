@@ -1,20 +1,27 @@
-package com.kotojava.lesson3.model;
+package com.kotojava.lesson3;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Data
+import java.time.LocalDate;
+
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Data
 public class User {
-    private long id;
+    private Long id;
     private String name;
-    private String surname;
-    private int age;
-    private String country;
-    private String profession;
+    private LocalDate birthDate;
+    private String city;
+    private String address;
     private String email;
+    private String phone;
+
 }
+
+
+

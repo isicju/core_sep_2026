@@ -23,7 +23,7 @@ public class UserService {
     private Map<String, List<User>> email3CharsIndex;
 
     public List<User> getAllUsers() {
-        return allUsers.getIfAvailable();
+        return allUsers.getObject();
     }
 
     public User getUserById(long userId) {
@@ -31,7 +31,7 @@ public class UserService {
     }
 
     public User getUserByIndexWithoutSorting(int position) {
-        return allUsers.getIfAvailable().get(position);
+        return allUsers.getObject().get(position);
     }
 
     public Collection<User> getUsersSortedByName() {
@@ -66,6 +66,6 @@ public class UserService {
     }
 
     public Collection<User> getUsersBy3EmailChars(String threeMatchingChars) {
-        return allUsers.getIfAvailable().stream().filter(u -> u.getEmail().contains(threeMatchingChars)).collect(Collectors.toList());
+        return allUsers.getObject().stream().filter(u -> u.getEmail().contains(threeMatchingChars)).collect(Collectors.toList());
     }
 }

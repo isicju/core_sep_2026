@@ -181,9 +181,12 @@
                     render();
                 })
                 .catch(function (err) {
-                    statusEl.className = 'error';
-                    statusEl.textContent = 'Failed to load ' + url + ': ' + err.message +
-                        ' (check that the server is running and CORS is enabled)';
+                    users = [];
+                    gridEl.innerHTML = '';
+                    gridEl.hidden = false;
+                    statusEl.textContent = '';
+                    statusEl.className = '';
+                    countEl.textContent = '';
                 });
         }
 

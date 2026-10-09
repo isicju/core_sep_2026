@@ -37,7 +37,10 @@
     <label><input id="yearToggle" type="checkbox"> By year</label>
     <input id="dobYear" type="number" min="1900" max="2100" step="1" placeholder="YYYY">
     <label><input id="emailToggle" type="checkbox"> Email search</label>
+
     <label><input id="delayToggle" type="checkbox"> Add delay</label>
+    <input id="delayValue" type="number" min="0" step="1" placeholder="Delay (ms)">
+
     <input id="emailChars" type="text" placeholder="min 3 chars of email" autocomplete="off">
     <input id="filter" type="search" placeholder="Filter by any field…">
     <button id="reload">Reload</button>
@@ -80,6 +83,7 @@
         var dobAfterEl = document.getElementById('dobAfter');
         var dobBeforeEl = document.getElementById('dobBefore');
         var delayToggleEl = document.getElementById('delayToggle');
+        var delayValueEl = document.getElementById('delayValue');
 
         // Jackson may send LocalDate as "2000-01-31" or as [2000, 1, 31]
         function formatDate(v) {
@@ -164,7 +168,11 @@
             if (emailToggleEl.checked && email.length >= 3) { // sent only when ticked and 3+ chars typed
                 params.push('email3Chars=' + encodeURIComponent(email));
             }
-            if (delayToggleEl.checked) params.push('delay');
+
+            if (delayToggleEl.checked && delayValueEl.value !== '') {
+                params.push('delay=' + encodeURIComponent(delayValueEl.value));
+            }
+
             var url = API_URL + (params.length ? '?' + params.join('&') : '');
             statusEl.className = '';
             statusEl.textContent = 'Loading…';

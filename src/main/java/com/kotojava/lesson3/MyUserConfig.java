@@ -6,6 +6,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.core.io.ClassPathResource;
 
 import java.net.MalformedURLException;
@@ -31,6 +33,7 @@ public class MyUserConfig {
 
     @Bean
     public List<User> allUsers(ObjectMapper objectMapper) throws Exception {
+        System.out.println("reading users every time...");
         return objectMapper.readValue(
                 new ClassPathResource("users.json").getInputStream(),
                 new TypeReference<ArrayList<User>>() {}

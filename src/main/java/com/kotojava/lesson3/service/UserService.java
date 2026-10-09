@@ -2,6 +2,7 @@ package com.kotojava.lesson3.service;
 
 import com.kotojava.lesson3.User;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -12,7 +13,8 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class UserService {
 
-    private List<User> allUsers;
+    private ObjectProvider<List<User>> allUsers;
+
     private List<User> listSortedByName;
     private Map<LocalDate, List<User>> mapByBirthDate;
     private Map<Long, User> mapUserById;
@@ -21,7 +23,7 @@ public class UserService {
     private Map<String, List<User>> email3CharsIndex;
 
     public List<User> getAllUsers() {
-        return allUsers;
+        return allUsers.getIfAvailable();
     }
 
     public User getUserById(long userId) {
@@ -29,7 +31,7 @@ public class UserService {
     }
 
     public User getUserByIndexWithoutSorting(int position) {
-        return allUsers.get(position);
+        return allUsers.getIfAvailable().get(position);
     }
 
     public Collection<User> getUsersSortedByName() {
@@ -64,7 +66,6 @@ public class UserService {
     }
 
     public Collection<User> getUsersBy3EmailChars(String threeMatchingChars) {
-        return allUsers.stream().filter(u -> u.getEmail().contains(threeMatchingChars)).collect(Collectors.toList());
-//        return email3CharsIndex.get(threeMatchingChars);
+        return allUsers.getIfAvailable().stream().filter(u -> u.getEmail().contains(threeMatchingChars)).collect(Collectors.toList());
     }
 }

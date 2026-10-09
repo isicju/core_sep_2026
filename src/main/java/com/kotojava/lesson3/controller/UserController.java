@@ -60,7 +60,7 @@ public class UserController {
         }
         if (position == null) {
             return ResponseEntity.ok(logCall("getAllUsers()",
-                    () -> userService.getAllUsers().stream().limit(500)));
+                    () -> userService.getAllUsers().stream().limit(500).toList()));
         }
         return ResponseEntity.ok(logCall("getUserByIndexWithoutSorting(" + position + ")",
                 () -> userService.getUserByIndexWithoutSorting(position)));

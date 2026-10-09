@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -63,6 +64,7 @@ public class UserService {
     }
 
     public Collection<User> getUsersBy3EmailChars(String threeMatchingChars) {
-        return email3CharsIndex.get(threeMatchingChars);
+        return allUsers.stream().filter(u -> u.getEmail().contains(threeMatchingChars)).collect(Collectors.toList());
+//        return email3CharsIndex.get(threeMatchingChars);
     }
 }

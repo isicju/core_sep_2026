@@ -28,8 +28,18 @@ public class UserController {
                                       @RequestParam(value = "dobBefore", required = false) LocalDate dobBefore,
                                       @RequestParam(value = "dobAfter", required = false) LocalDate dobAfter,
                                       @RequestParam(value = "dobYear", required = false) Integer dobYear,
-                                      @RequestParam(value = "email3Chars", required = false) String email3Chars
+                                      @RequestParam(value = "email3Chars", required = false) String email3Chars,
+                                      @RequestParam(value = "delay", required = false) Integer delay
+
     ) {
+        if(delay != null){
+            try {
+                System.out.println("sleeeping.. " + delay);
+                Thread.sleep(delay);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
         log.info("GET /users: position={}, sorted={}, dob={}, olderThan={}, dobBefore={}, dobAfter={}, dobYear={}, email3Chars={}",
                 position, sorting, dob, olderThan, dobBefore, dobAfter, dobYear, email3Chars);
 

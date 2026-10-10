@@ -10,7 +10,6 @@
         header { display: flex; gap: 12px; align-items: center; padding: 16px 24px; background: #fff; border-bottom: 1px solid #e2e4e9; }
         h1 { font-size: 20px; margin: 0; flex: 1; }
         label { font-size: 14px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
-        input[type="date"] { padding: 7px 10px; border: 1px solid #ccd0d8; border-radius: 6px; font-size: 14px; }
         input[type="number"] { padding: 7px 10px; border: 1px solid #ccd0d8; border-radius: 6px; font-size: 14px; width: 90px; }
         input[type="text"] { padding: 8px 12px; border: 1px solid #ccd0d8; border-radius: 6px; font-size: 14px; width: 180px; }
         input[type="search"] { padding: 8px 12px; border: 1px solid #ccd0d8; border-radius: 6px; font-size: 14px; width: 260px; }
@@ -19,6 +18,8 @@
         main { padding: 24px; overflow-x: auto; }
         #status { padding: 12px 0; color: #667; }
         #status.error { color: #c0392b; }
+        #conn { font-size: 13px; padding: 4px 10px; border-radius: 12px; background: #fdecea; color: #c0392b; }
+        #conn.online { background: #e6f6ec; color: #1e8449; }
         .grid { display: grid; grid-template-columns: 60px 1.2fr 110px 1fr 1.6fr 1.6fr 1.2fr; min-width: 960px; background: #fff; border: 1px solid #e2e4e9; border-radius: 8px; overflow: hidden; }
         .cell { padding: 10px 14px; border-bottom: 1px solid #eef0f3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .head { background: #fafbfc; font-weight: 600; font-size: 13px; cursor: pointer; user-select: none; }
@@ -29,19 +30,13 @@
 <body>
 <header>
     <h1>Users <small id="count"></small></h1>
-    <label><input id="sortedToggle" type="checkbox"> Sorted by name (server)</label>
-    <label>Birth date <input id="dobPicker" type="date"></label>
-    <label><input id="rangeToggle" type="checkbox"> Date range</label>
-    <label>From <input id="dobAfter" type="date"></label>
-    <label>To <input id="dobBefore" type="date"></label>
-    <label><input id="yearToggle" type="checkbox"> By year</label>
-    <input id="dobYear" type="number" min="1900" max="2100" step="1" placeholder="YYYY">
+    <span id="conn">offline</span>
     <label><input id="emailToggle" type="checkbox"> Email search</label>
+    <input id="emailChars" type="text" placeholder="min 3 chars of email" autocomplete="off">
 
     <label><input id="delayToggle" type="checkbox"> Add delay</label>
     <input id="delayValue" type="number" min="0" step="1" placeholder="Delay (ms)">
 
-    <input id="emailChars" type="text" placeholder="min 3 chars of email" autocomplete="off">
     <input id="filter" type="search" placeholder="Filter by any field…">
     <button id="reload">Reload</button>
 </header>
@@ -52,7 +47,7 @@
 
 <script>
     (function () {
-        var API_URL = `${window.location.origin}/users`;
+        var WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/users';
         var COLUMNS = [
             { key: 'id', title: 'ID' },
             { key: 'name', title: 'Name' },
@@ -68,24 +63,21 @@
         var sortKey = null;
         var sortAsc = true;
 
+        var socket = null;
+        var reconnectTimer = null;
+        var lastRequestId = 0; // only the latest response is rendered
+
         var gridEl = document.getElementById('grid');
         var statusEl = document.getElementById('status');
         var countEl = document.getElementById('count');
+        var connEl = document.getElementById('conn');
         var filterEl = document.getElementById('filter');
-        var sortedToggleEl = document.getElementById('sortedToggle');
-        var dobPickerEl = document.getElementById('dobPicker');
         var emailToggleEl = document.getElementById('emailToggle');
         var emailCharsEl = document.getElementById('emailChars');
         var emailTimer = null;
-        var yearToggleEl = document.getElementById('yearToggle');
-        var dobYearEl = document.getElementById('dobYear');
-        var rangeToggleEl = document.getElementById('rangeToggle');
-        var dobAfterEl = document.getElementById('dobAfter');
-        var dobBeforeEl = document.getElementById('dobBefore');
         var delayToggleEl = document.getElementById('delayToggle');
         var delayValueEl = document.getElementById('delayValue');
 
-        // Jackson may send LocalDate as "2000-01-31" or as [2000, 1, 31]
         function formatDate(v) {
             if (Array.isArray(v)) {
                 return v[0] + '-' + String(v[1]).padStart(2, '0') + '-' + String(v[2]).padStart(2, '0');
@@ -127,7 +119,7 @@
 
         function render() {
             var all = visibleUsers();
-            var list = all.slice(0, MAX_ROWS); // UI-side limit
+            var list = all.slice(0, MAX_ROWS);
             gridEl.innerHTML = '';
 
             COLUMNS.forEach(function (c) {
@@ -152,79 +144,75 @@
             statusEl.className = '';
         }
 
+        function showError(msg) {
+            users = [];
+            gridEl.innerHTML = '';
+            gridEl.hidden = true;
+            countEl.textContent = '';
+            statusEl.textContent = msg;
+            statusEl.className = 'error';
+        }
+
+        function setOnline(online) {
+            connEl.textContent = online ? 'live' : 'offline';
+            connEl.className = online ? 'online' : '';
+        }
+
+        function connect() {
+            socket = new WebSocket(WS_URL);
+
+            socket.onopen = function () {
+                setOnline(true);
+                load();
+            };
+
+            socket.onmessage = function (event) {
+                var msg;
+                try { msg = JSON.parse(event.data); } catch (e) { return; }
+                if (String(msg.requestId) !== String(lastRequestId)) return; // stale response
+                if (msg.error) { showError('Error: ' + msg.error); return; }
+                users = Array.isArray(msg.data) ? msg.data : [];
+                render();
+            };
+
+            socket.onclose = function () {
+                setOnline(false);
+                clearTimeout(reconnectTimer);
+                reconnectTimer = setTimeout(connect, 2000); // auto-reconnect
+            };
+
+            socket.onerror = function () { socket.close(); };
+        }
+
         function load() {
-            sortKey = null; // every server call shows the server's own order
-            var params = [];
-            if (sortedToggleEl.checked) params.push('sorted=name');
-            if (dobPickerEl.value) params.push('dob=' + encodeURIComponent(dobPickerEl.value)); // yyyy-MM-dd
-            if (rangeToggleEl.checked) { // range params are sent only when ticked
-                if (dobAfterEl.value) params.push('dobBefore=' + encodeURIComponent(dobAfterEl.value));  // From
-                if (dobBeforeEl.value) params.push('dobAfter=' + encodeURIComponent(dobBeforeEl.value)); // To
+            sortKey = null;
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                statusEl.className = '';
+                statusEl.textContent = 'Connecting…';
+                return; // onopen will call load()
             }
-            if (yearToggleEl.checked && dobYearEl.value) { // year param is sent only when ticked
-                params.push('dobYear=' + encodeURIComponent(dobYearEl.value));
-            }
+
+            var req = { requestId: ++lastRequestId };
             var email = emailCharsEl.value.trim();
-            if (emailToggleEl.checked && email.length >= 3) { // sent only when ticked and 3+ chars typed
-                params.push('email3Chars=' + encodeURIComponent(email));
-            }
+            if (emailToggleEl.checked && email.length >= 3) req.email3Chars = email;
+            if (delayToggleEl.checked && delayValueEl.value !== '') req.delay = Number(delayValueEl.value);
 
-            if (delayToggleEl.checked && delayValueEl.value !== '') {
-                params.push('delay=' + encodeURIComponent(delayValueEl.value));
-            }
-
-            var url = API_URL + (params.length ? '?' + params.join('&') : '');
             statusEl.className = '';
             statusEl.textContent = 'Loading…';
             gridEl.hidden = true;
-            fetch(url, { headers: { 'Accept': 'application/json' } })
-                .then(function (res) {
-                    if (!res.ok) throw new Error('HTTP ' + res.status);
-                    return res.text(); // read as text first: the body may be empty (e.g. no match)
-                })
-                .then(function (text) {
-                    var data = null;
-                    if (text && text.trim()) {
-                        try { data = JSON.parse(text); } catch (e) { data = null; }
-                    }
-                    // empty body, null, or unparsable -> empty list
-                    users = Array.isArray(data) ? data : (data && data.content) || [];
-                    render();
-                })
-                .catch(function (err) {
-                    users = [];
-                    gridEl.innerHTML = '';
-                    gridEl.hidden = false;
-                    statusEl.textContent = '';
-                    statusEl.className = '';
-                    countEl.textContent = '';
-                });
+            socket.send(JSON.stringify(req));
         }
 
-        sortedToggleEl.addEventListener('change', function () {
-            sortKey = null; // let the server's order show
-            load();
-        });
         emailToggleEl.addEventListener('change', load);
         emailCharsEl.addEventListener('input', function () {
-            if (!emailToggleEl.checked) return; // ignored while the box is unticked
+            if (!emailToggleEl.checked) return;
             clearTimeout(emailTimer);
-            emailTimer = setTimeout(load, 300); // wait for the user to pause typing
+            emailTimer = setTimeout(load, 300);
         });
-        yearToggleEl.addEventListener('change', load);
-        dobYearEl.addEventListener('change', function () {
-            if (yearToggleEl.checked) load(); // ignored while the box is unticked
-        });
-        rangeToggleEl.addEventListener('change', load);
-        [dobAfterEl, dobBeforeEl].forEach(function (el) {
-            el.addEventListener('change', function () {
-                if (rangeToggleEl.checked) load(); // ignored while the box is unticked
-            });
-        });
-        dobPickerEl.addEventListener('change', load); // empty value (cleared) loads without dob
         filterEl.addEventListener('input', render);
         document.getElementById('reload').addEventListener('click', load);
-        load();
+
+        connect();
     })();
 </script>
 </body>

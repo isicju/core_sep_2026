@@ -85,23 +85,22 @@ public class MyUserConfig {
 
     @Bean
     public Map<String, List<User>> email3CharsIndex(List<User> allUsers) {
-//        Map<String, List<User>> cache3Chars = new HashMap<>();
-//        for (char first = 'a'; first <= 'z'; first++) {
-//            for (char second = 'a'; second <= 'z'; second++) {
-//                for (char third = 'a'; third <= 'z'; third++) {
-//                    String indexKey = String.valueOf(first) + second + third;
-//
-//                    for (User tempUser : allUsers) {
-//                        if (tempUser.getEmail().contains(indexKey)) {
-//                            cache3Chars.computeIfAbsent(indexKey, k -> new ArrayList<>()).add(tempUser);
-//                        }
-//                    }
-//
-//                }
-//            }
-//        }
-//        return cache3Chars;
-        return Map.of();
+        Map<String, List<User>> cache3Chars = new HashMap<>();
+        for (char first = 'a'; first <= 'z'; first++) {
+            for (char second = 'a'; second <= 'z'; second++) {
+                for (char third = 'a'; third <= 'z'; third++) {
+                    String indexKey = String.valueOf(first) + second + third;
+
+                    for (User tempUser : allUsers) {
+                        if (tempUser.getEmail().contains(indexKey)) {
+                            cache3Chars.computeIfAbsent(indexKey, k -> new ArrayList<>()).add(tempUser);
+                        }
+                    }
+
+                }
+            }
+        }
+        return cache3Chars;
     }
 
 }

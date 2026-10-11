@@ -148,7 +148,6 @@
 
             countEl.textContent = '(' + (all.length > MAX_ROWS ? 'first ' + list.length + ' of ' + all.length : all.length !== users.length ? all.length + ' of ' + users.length : list.length) + ')';
             gridEl.hidden = false;
-            statusEl.textContent = list.length ? '' : 'No users found.';
             statusEl.className = '';
         }
 
@@ -175,7 +174,6 @@
 
             var url = API_URL + (params.length ? '?' + params.join('&') : '');
             statusEl.className = '';
-            statusEl.textContent = 'Loading…';
             gridEl.hidden = true;
             fetch(url, { headers: { 'Accept': 'application/json' } })
                 .then(function (res) {
@@ -195,7 +193,7 @@
                     users = [];
                     gridEl.innerHTML = '';
                     gridEl.hidden = false;
-                    statusEl.textContent = '';
+
                     statusEl.className = '';
                     countEl.textContent = '';
                 });

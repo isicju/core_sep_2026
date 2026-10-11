@@ -31,8 +31,6 @@ public class MyUserConfig {
         return mapper;
     }
 
-
-    @Scope("prototype")
     @Bean
     public List<User> allUsers(ObjectMapper objectMapper) throws Exception {
         System.out.println("reading users every time...");

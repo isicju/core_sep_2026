@@ -31,15 +31,24 @@ public class MyUserConfig {
         return mapper;
     }
 
-
-    @Scope("prototype")
     @Bean
     public List<User> allUsers(ObjectMapper objectMapper) throws Exception {
         System.out.println("reading users every time...");
-        return objectMapper.readValue(
+        List<User> users = objectMapper.readValue(
                 new ClassPathResource("users.json").getInputStream(),
-                new TypeReference<ArrayList<User>>() {}
+                new TypeReference<ArrayList<User>>() {
+                }
         );
+
+        return users.stream().map(user -> {
+            user.setCity("hidden city");
+            user.setName("hidden name");
+            user.setPhone("hidden phone");
+            user.setAddress("hidden address");
+            user.setPhone("hidden phone");
+            user.setPhone("hidden phone");
+            return user;
+        }).collect(Collectors.toList());
     }
 
 //    @Bean

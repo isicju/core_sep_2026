@@ -1,219 +1,423 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Users</title>
+    <title>Loan applications</title>
     <style>
+        :root {
+            --bg: #eef1f6; --surface: #ffffff; --ink: #17202e; --muted: #667085; --line: #e2e7ef; --row-hover: #f6f8fc;
+            --new-bg: #e0ecff; --new-fg: #1d4ed8; --new-dot: #3b82f6;
+            --ok-bg: #dcf5e4; --ok-fg: #166534; --ok-dot: #22c55e;
+            --no-bg: #fde2e2; --no-fg: #b91c1c; --no-dot: #ef4444;
+            --dr-bg: #fff3c4; --dr-fg: #854d0e; --dr-dot: #eab308;
+            --accent: #1d4ed8; --accent-ink: #ffffff;
+            --approve: #15803d; --approve-ink: #ffffff;
+            --reject: #b91c1c; --reject-ink: #ffffff;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0e1420; --surface: #161e2d; --ink: #e8edf6; --muted: #8b97ab; --line: #263045; --row-hover: #1b2538;
+                --new-bg: #172a52; --new-fg: #93b8ff;
+                --ok-bg: #123524; --ok-fg: #86e0a5;
+                --no-bg: #3d1717; --no-fg: #ff9d9d;
+                --dr-bg: #3a2f0c; --dr-fg: #f5d36b;
+                --accent: #5b8cff; --accent-ink: #0e1420;
+                --approve: #4ade80; --approve-ink: #0e1420;
+                --reject: #f87171; --reject-ink: #0e1420;
+            }
+        }
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: system-ui, sans-serif; background: #f4f5f7; color: #1f2430; }
-        header { display: flex; gap: 12px; align-items: center; padding: 16px 24px; background: #fff; border-bottom: 1px solid #e2e4e9; }
-        h1 { font-size: 20px; margin: 0; flex: 1; }
-        label { font-size: 14px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
-        input[type="number"] { padding: 7px 10px; border: 1px solid #ccd0d8; border-radius: 6px; font-size: 14px; width: 90px; }
-        input[type="text"] { padding: 8px 12px; border: 1px solid #ccd0d8; border-radius: 6px; font-size: 14px; width: 180px; }
-        input[type="search"] { padding: 8px 12px; border: 1px solid #ccd0d8; border-radius: 6px; font-size: 14px; width: 260px; }
-        button { padding: 8px 14px; border: 0; border-radius: 6px; background: #2f6fed; color: #fff; font-size: 14px; cursor: pointer; }
-        button:hover { background: #2559c4; }
-        main { padding: 24px; overflow-x: auto; }
-        #status { padding: 12px 0; color: #667; }
-        #status.error { color: #c0392b; }
-        #conn { font-size: 13px; padding: 4px 10px; border-radius: 12px; background: #fdecea; color: #c0392b; }
-        #conn.online { background: #e6f6ec; color: #1e8449; }
-        .grid { display: grid; grid-template-columns: 60px 1.2fr 110px 1fr 1.6fr 1.6fr 1.2fr; min-width: 960px; background: #fff; border: 1px solid #e2e4e9; border-radius: 8px; overflow: hidden; }
-        .cell { padding: 10px 14px; border-bottom: 1px solid #eef0f3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .head { background: #fafbfc; font-weight: 600; font-size: 13px; cursor: pointer; user-select: none; }
-        .head:hover { background: #f0f2f5; }
-        .row:hover .cell { background: #f7faff; }
+        body {
+            margin: 0; background: var(--bg); color: var(--ink);
+            font-family: "Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
+            font-size: 15px; line-height: 1.5;
+        }
+        .wrap { max-width: 1180px; margin: 0 auto; padding: 40px 20px 64px; }
+        h1 { font-size: 30px; letter-spacing: -0.02em; margin: 0 0 4px; }
+        h2 { font-size: 18px; margin: 0 0 14px; }
+        .sub { color: var(--muted); margin: 0 0 28px; }
+        .hidden { display: none !important; }
+        :focus-visible { outline: 2px solid var(--new-dot); outline-offset: 2px; }
+
+        /* list */
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 24px; }
+        .stat {
+            background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+            padding: 14px 16px; border-left: 5px solid var(--c); cursor: pointer; text-align: left;
+            font: inherit; color: inherit; transition: box-shadow .15s;
+        }
+        .stat:hover { box-shadow: 0 6px 18px rgba(23, 32, 46, .08); }
+        .stat[aria-pressed="true"] { outline: 2px solid var(--c); outline-offset: 1px; }
+        .stat b { display: block; font-size: 28px; line-height: 1.1; letter-spacing: -0.02em; }
+        .stat span { color: var(--muted); font-size: 13px; }
+        .toolbar { display: flex; gap: 12px; margin-bottom: 14px; }
+        .search {
+            flex: 1; min-width: 220px; padding: 11px 14px; border-radius: 10px; font: inherit;
+            border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+        }
+        .notice { background: var(--dr-bg); color: var(--dr-fg); padding: 10px 14px; border-radius: 10px; margin-bottom: 14px; font-size: 14px; }
+        .table-box { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 860px; }
+        th { text-align: left; font-size: 13px; font-weight: 600; color: var(--muted); padding: 14px 16px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+        td { padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+        tr:last-child td { border-bottom: 0; }
+        tbody tr { cursor: pointer; }
+        tbody tr:hover { background: var(--row-hover); }
+        .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        th.num { text-align: right; }
+        .name { font-weight: 600; }
+        .id { color: var(--muted); font-size: 12px; }
+        .comment { color: var(--muted); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .empty { text-align: center; color: var(--muted); padding: 40px 16px; cursor: default; }
+
+        .badge {
+            display: inline-flex; align-items: center; gap: 7px; padding: 4px 12px 4px 10px;
+            border-radius: 999px; font-size: 13px; font-weight: 700; background: var(--bg-c); color: var(--fg-c);
+        }
+        .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--dot-c); }
+        .NEW      { --bg-c: var(--new-bg); --fg-c: var(--new-fg); --dot-c: var(--new-dot); --c: var(--new-dot); }
+        .APPROVED { --bg-c: var(--ok-bg);  --fg-c: var(--ok-fg);  --dot-c: var(--ok-dot);  --c: var(--ok-dot); }
+        .REJECTED { --bg-c: var(--no-bg);  --fg-c: var(--no-fg);  --dot-c: var(--no-dot);  --c: var(--no-dot); }
+        .DRAFT    { --bg-c: var(--dr-bg);  --fg-c: var(--dr-fg);  --dot-c: var(--dr-dot);  --c: var(--dr-dot); }
+        .ALL      { --c: var(--muted); }
+
+        /* detail */
+        .back { background: none; border: 0; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; padding: 0; margin-bottom: 18px; }
+        .back:hover { text-decoration: underline; }
+        .head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 24px; }
+        .head h1 { margin: 0; }
+        .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 22px; margin-bottom: 20px; }
+        .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px 24px; margin: 0; }
+        .fields dt { color: var(--muted); font-size: 13px; }
+        .fields dd { margin: 2px 0 0; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+        .fields .wide { grid-column: 1 / -1; }
+        .fields textarea {
+            width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+            background: var(--bg); color: var(--ink); font: inherit; font-weight: 400; resize: vertical;
+        }
+        .fields textarea:disabled { opacity: .7; cursor: not-allowed; resize: none; }
+        .calc-top { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+        .calc-top h2 { margin: 0; }
+        .btn {
+            background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 10px;
+            padding: 11px 20px; font: inherit; font-weight: 700; cursor: pointer;
+        }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
+        .btn.secondary { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+        .btn.approve { background: var(--approve); color: var(--approve-ink); }
+        .btn.reject { background: var(--reject); color: var(--reject-ink); }
+        .head .actions { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+        .ok { background: var(--ok-bg); color: var(--ok-fg); padding: 10px 14px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; }
+        .head + .error { margin: -8px 0 20px; }
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .figure { border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+        .figure small { color: var(--muted); font-size: 13px; display: block; }
+        .figure b { display: block; font-size: 32px; letter-spacing: -0.02em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+        .figure.bank { border-left: 5px solid var(--new-dot); }
+        .figure.salary { border-left: 5px solid var(--ok-dot); }
+        .ratio { margin-top: 18px; }
+        .ratio p { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+        .bar { height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; }
+        .bar i { display: block; height: 100%; width: 0; background: var(--bar, var(--ok-dot)); transition: width .4s; }
+        .error { color: var(--no-fg); background: var(--no-bg); padding: 10px 14px; border-radius: 10px; margin-top: 16px; font-size: 14px; }
+        @media (max-width: 560px) { .compare { grid-template-columns: 1fr; } }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
     </style>
 </head>
 <body>
-<header>
-    <h1>Users <small id="count"></small></h1>
-    <span id="conn">offline</span>
-    <label><input id="emailToggle" type="checkbox"> Email search</label>
-    <input id="emailChars" type="text" placeholder="min 3 chars of email" autocomplete="off">
+<div class="wrap">
 
-    <label><input id="delayToggle" type="checkbox"> Add delay</label>
-    <input id="delayValue" type="number" min="0" step="1" placeholder="Delay (ms)">
+    <!-- LIST VIEW -->
+    <section id="list-view">
+        <h1>Loan applications</h1>
+        <p class="sub">Select an application to see its details and run the loan calculation.</p>
+        <div id="notice"></div>
+        <div class="stats" id="stats"></div>
+        <div class="toolbar">
+            <input class="search" id="search" type="search" placeholder="Search by name or ID" aria-label="Search applications">
+        </div>
+        <div class="table-box">
+            <table>
+                <thead>
+                <tr>
+                    <th>Applicant</th>
+                    <th class="num">Monthly income</th>
+                    <th class="num">Property price</th>
+                    <th class="num">First payment</th>
+                    <th class="num">Expected monthly</th>
+                    <th class="num">Term</th>
+                    <th>Status</th>
+                    <th>Analyst comments</th>
+                </tr>
+                </thead>
+                <tbody id="rows"></tbody>
+            </table>
+        </div>
+    </section>
 
-    <input id="filter" type="search" placeholder="Filter by any field…">
-    <button id="reload">Reload</button>
-</header>
-<main>
-    <div id="status"></div>
-    <div id="grid" class="grid" hidden></div>
-</main>
+    <!-- DETAIL VIEW -->
+    <section id="detail-view" class="hidden">
+        <button class="back" id="back">&larr; All applications</button>
+        <div class="head">
+            <h1 id="detail-title"></h1>
+            <span id="detail-badge"></span>
+            <div class="actions">
+                <button class="btn secondary" id="draft-btn">Save as draft</button>
+                <button class="btn reject" id="reject-btn">Reject</button>
+                <button class="btn approve" id="approve-btn">Approve</button>
+            </div>
+        </div>
+        <div id="lock-msg"></div>
+        <div id="draft-msg"></div>
+        <div class="panel">
+            <h2>Application data</h2>
+            <dl class="fields" id="detail-fields"></dl>
+        </div>
+        <div class="panel">
+            <div class="calc-top">
+                <h2>Loan calculation</h2>
+                <button class="btn" id="calc-btn">Calculate monthly payment</button>
+            </div>
+            <div class="compare">
+                <div class="figure bank"><small>Monthly payment expected by bank</small><b id="bank-val">—</b></div>
+                <div class="figure salary"><small>Monthly salary</small><b id="salary-val">—</b></div>
+            </div>
+            <div class="ratio hidden" id="ratio">
+                <p id="ratio-text"></p>
+                <div class="bar"><i id="ratio-bar"></i></div>
+            </div>
+            <div id="calc-msg"></div>
+        </div>
+    </section>
+
+</div>
 
 <script>
-    (function () {
-        var WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/users';
-        var COLUMNS = [
-            { key: 'id', title: 'ID' },
-            { key: 'name', title: 'Name' },
-            { key: 'birthDate', title: 'Birth date' },
-            { key: 'city', title: 'City' },
-            { key: 'address', title: 'Address' },
-            { key: 'email', title: 'Email' },
-            { key: 'phone', title: 'Phone' }
-        ];
+    const ENDPOINT = "/loanapplications";
+    const CURRENCY = "EUR"; // change to match your data
+    const STATUSES = ["NEW", "APPROVED", "REJECTED", "DRAFT"];
+    const LABEL = { NEW: "New", APPROVED: "Approved", REJECTED: "Rejected", DRAFT: "Draft" };
 
-        var MAX_ROWS = 500;
-        var users = [];
-        var sortKey = null;
-        var sortAsc = true;
+    // The three actions on the detail screen. All of them send the same PUT request;
+    // only the status in the payload differs.
+    const ACTIONS = {
+        DRAFT:    { btn: "draft-btn",   label: "Save as draft", busy: "Saving…",    done: "Saved as draft." },
+        APPROVED: { btn: "approve-btn", label: "Approve",       busy: "Approving…", done: "Application approved." },
+        REJECTED: { btn: "reject-btn",  label: "Reject",        busy: "Rejecting…", done: "Application rejected." }
+    };
+    const BUTTON_IDS = ["draft-btn", "reject-btn", "approve-btn", "calc-btn"];
 
-        var socket = null;
-        var reconnectTimer = null;
-        var lastRequestId = 0; // only the latest response is rendered
+    // Shown only when the endpoint can't be reached (e.g. opening this file directly)
+    const DEMO = [
+        { id: "LA-1001", firstName: "Emma", lastName: "de Vries", monthlyIncome: 4200, firstPayment: 60000, propertyPrice: 320000, expectedMonthlyPayment: 1450, loanTermYears: 25, status: "NEW", analystComments: "" },
+        { id: "LA-1002", firstName: "Lars", lastName: "Jansen", monthlyIncome: 5800, firstPayment: 90000, propertyPrice: 410000, expectedMonthlyPayment: 1700, loanTermYears: 30, status: "APPROVED", analystComments: "Strong income, low debt ratio." },
+        { id: "LA-1003", firstName: "Sanne", lastName: "Bakker", monthlyIncome: 2100, firstPayment: 10000, propertyPrice: 280000, expectedMonthlyPayment: 1500, loanTermYears: 20, status: "REJECTED", analystComments: "Payment exceeds 40% of income." },
+        { id: "LA-1004", firstName: "Daan", lastName: "Visser", monthlyIncome: 3600, firstPayment: 35000, propertyPrice: 250000, expectedMonthlyPayment: 1100, loanTermYears: 25, status: "DRAFT", analystComments: "Waiting for employer statement." }
+    ];
 
-        var gridEl = document.getElementById('grid');
-        var statusEl = document.getElementById('status');
-        var countEl = document.getElementById('count');
-        var connEl = document.getElementById('conn');
-        var filterEl = document.getElementById('filter');
-        var emailToggleEl = document.getElementById('emailToggle');
-        var emailCharsEl = document.getElementById('emailChars');
-        var emailTimer = null;
-        var delayToggleEl = document.getElementById('delayToggle');
-        var delayValueEl = document.getElementById('delayValue');
+    let all = [], filter = "ALL", query = "", demoMode = false, current = null, calcResult = null;
+    const $ = id => document.getElementById(id);
 
-        function formatDate(v) {
-            if (Array.isArray(v)) {
-                return v[0] + '-' + String(v[1]).padStart(2, '0') + '-' + String(v[2]).padStart(2, '0');
-            }
-            return v == null ? '' : String(v);
-        }
+    // APPROVED and REJECTED are final: the detail screen becomes read-only
+    const isLocked = a => !!a && (a.status === "APPROVED" || a.status === "REJECTED");
 
-        function valueOf(user, key) {
-            return key === 'birthDate' ? formatDate(user[key]) : (user[key] == null ? '' : user[key]);
-        }
+    const money = v => v == null ? "—" :
+        new Intl.NumberFormat(undefined, { style: "currency", currency: CURRENCY, maximumFractionDigits: 0 }).format(v);
+    const money2 = v => new Intl.NumberFormat(undefined, { style: "currency", currency: CURRENCY, minimumFractionDigits: 2 }).format(v);
+    const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const badge = s => `<span class="badge ${esc(s)}">${LABEL[s] || esc(s)}</span>`;
 
-        function visibleUsers() {
-            var q = filterEl.value.trim().toLowerCase();
-            var list = users.filter(function (u) {
-                if (!q) return true;
-                return COLUMNS.some(function (c) {
-                    return String(valueOf(u, c.key)).toLowerCase().indexOf(q) !== -1;
-                });
-            });
-            if (sortKey) {
-                list.sort(function (a, b) {
-                    var x = valueOf(a, sortKey), y = valueOf(b, sortKey);
-                    var r = (typeof x === 'number' && typeof y === 'number')
-                        ? x - y
-                        : String(x).localeCompare(String(y));
-                    return sortAsc ? r : -r;
-                });
-            }
-            return list;
-        }
+    /* ---------- list ---------- */
+    function renderStats() {
+        const counts = Object.fromEntries(STATUSES.map(s => [s, all.filter(a => a.status === s).length]));
+        const cards = [["ALL", "All applications", all.length], ...STATUSES.map(s => [s, LABEL[s], counts[s]])];
+        $("stats").innerHTML = cards.map(([key, label, n]) =>
+            `<button class="stat ${key}" data-filter="${key}" aria-pressed="${filter === key}"><b>${n}</b><span>${label}</span></button>`).join("");
+    }
 
-        function cell(text, cls) {
-            var d = document.createElement('div');
-            d.className = 'cell' + (cls ? ' ' + cls : '');
-            d.textContent = text;
-            d.title = text;
-            return d;
-        }
+    function renderRows() {
+        const q = query.trim().toLowerCase();
+        const list = all.filter(a =>
+            (filter === "ALL" || a.status === filter) &&
+            (!q || `${a.firstName} ${a.lastName} ${a.id}`.toLowerCase().includes(q)));
+        $("rows").innerHTML = list.length ? list.map(a => `
+      <tr data-id="${esc(a.id)}" tabindex="0">
+        <td><div class="name">${esc(a.firstName)} ${esc(a.lastName)}</div><div class="id">${esc(a.id)}</div></td>
+        <td class="num">${money(a.monthlyIncome)}</td>
+        <td class="num">${money(a.propertyPrice)}</td>
+        <td class="num">${money(a.firstPayment)}</td>
+        <td class="num">${money(a.expectedMonthlyPayment)}</td>
+        <td class="num">${a.loanTermYears != null ? a.loanTermYears + " yrs" : "—"}</td>
+        <td>${badge(a.status)}</td>
+        <td class="comment" title="${esc(a.analystComments)}">${esc(a.analystComments) || "—"}</td>
+      </tr>`).join("") :
+            `<tr><td colspan="8" class="empty">No applications match this filter. Clear the search or pick another status.</td></tr>`;
+    }
 
-        function render() {
-            var all = visibleUsers();
-            var list = all.slice(0, MAX_ROWS);
-            gridEl.innerHTML = '';
+    function renderList() { renderStats(); renderRows(); }
 
-            COLUMNS.forEach(function (c) {
-                var arrow = sortKey === c.key ? (sortAsc ? ' ▲' : ' ▼') : '';
-                var h = cell(c.title + arrow, 'head');
-                h.addEventListener('click', function () {
-                    if (sortKey === c.key) { sortAsc = !sortAsc; } else { sortKey = c.key; sortAsc = true; }
-                    render();
-                });
-                gridEl.appendChild(h);
-            });
+    /* ---------- detail ---------- */
 
-            list.forEach(function (u) {
-                COLUMNS.forEach(function (c) {
-                    gridEl.appendChild(cell(String(valueOf(u, c.key)), 'row'));
-                });
-            });
-
-            countEl.textContent = '(' + (all.length > MAX_ROWS ? 'first ' + list.length + ' of ' + all.length : all.length !== users.length ? all.length + ' of ' + users.length : list.length) + ')';
-            gridEl.hidden = false;
-            statusEl.textContent = list.length ? '' : 'No users found.';
-            statusEl.className = '';
-        }
-
-        function showError(msg) {
-            users = [];
-            gridEl.innerHTML = '';
-            gridEl.hidden = true;
-            countEl.textContent = '';
-            statusEl.textContent = msg;
-            statusEl.className = 'error';
-        }
-
-        function setOnline(online) {
-            connEl.textContent = online ? 'live' : 'offline';
-            connEl.className = online ? 'online' : '';
-        }
-
-        function connect() {
-            socket = new WebSocket(WS_URL);
-
-            socket.onopen = function () {
-                setOnline(true);
-                load();
-            };
-
-            socket.onmessage = function (event) {
-                var msg;
-                try { msg = JSON.parse(event.data); } catch (e) { return; }
-                if (String(msg.requestId) !== String(lastRequestId)) return; // stale response
-                if (msg.error) { showError('Error: ' + msg.error); return; }
-                users = Array.isArray(msg.data) ? msg.data : [];
-                render();
-            };
-
-            socket.onclose = function () {
-                setOnline(false);
-                clearTimeout(reconnectTimer);
-                reconnectTimer = setTimeout(connect, 2000); // auto-reconnect
-            };
-
-            socket.onerror = function () { socket.close(); };
-        }
-
-        function load() {
-            sortKey = null;
-            if (!socket || socket.readyState !== WebSocket.OPEN) {
-                statusEl.className = '';
-                statusEl.textContent = 'Connecting…';
-                return; // onopen will call load()
-            }
-
-            var req = { requestId: ++lastRequestId };
-            var email = emailCharsEl.value.trim();
-            if (emailToggleEl.checked && email.length >= 3) req.email3Chars = email;
-            if (delayToggleEl.checked && delayValueEl.value !== '') req.delay = Number(delayValueEl.value);
-
-            statusEl.className = '';
-            statusEl.textContent = 'Loading…';
-            gridEl.hidden = true;
-            socket.send(JSON.stringify(req));
-        }
-
-        emailToggleEl.addEventListener('change', load);
-        emailCharsEl.addEventListener('input', function () {
-            if (!emailToggleEl.checked) return;
-            clearTimeout(emailTimer);
-            emailTimer = setTimeout(load, 300);
+    // Single place that decides which buttons are enabled.
+    // Locked applications: everything off. Otherwise everything on, except while a request is running.
+    function updateButtons(busy = false) {
+        const locked = isLocked(current);
+        const why = locked ? `${LABEL[current.status]} applications can't be changed` : "";
+        BUTTON_IDS.forEach(id => {
+            $(id).disabled = locked || busy;
+            $(id).title = why;
         });
-        filterEl.addEventListener('input', render);
-        document.getElementById('reload').addEventListener('click', load);
+    }
 
-        connect();
-    })();
+    function renderDetail(a) {
+        current = a;
+        const locked = isLocked(a);
+        $("detail-title").textContent = `${a.firstName} ${a.lastName}`;
+        $("detail-badge").innerHTML = badge(a.status);
+        $("lock-msg").innerHTML = locked
+            ? `<div class="notice">This application is ${LABEL[a.status].toLowerCase()}, so it is read-only and can't be changed.</div>`
+            : "";
+        $("draft-msg").innerHTML = "";
+        const f = (label, value, cls = "") => `<div class="${cls}"><dt>${label}</dt><dd>${value}</dd></div>`;
+        $("detail-fields").innerHTML = [
+            f("Application ID", esc(a.id)),
+            f("First name", esc(a.firstName)),
+            f("Last name", esc(a.lastName)),
+            f("Status", LABEL[a.status] || esc(a.status)),
+            f("Monthly income", money(a.monthlyIncome)),
+            f("First payment", money(a.firstPayment)),
+            f("Property price", money(a.propertyPrice)),
+            f("Expected monthly payment", money(a.expectedMonthlyPayment)),
+            f("Loan term", a.loanTermYears != null ? a.loanTermYears + " years" : "—"),
+            f("Analyst comments", `<textarea id="comments" rows="3" placeholder="Add a comment for this application"${locked ? " disabled" : ""}>${esc(a.analystComments)}</textarea>`, "wide")
+        ].join("");
+        calcResult = null;
+        // reset calculation panel
+        $("salary-val").textContent = money2(a.monthlyIncome ?? 0);
+        showPayment(a.expectedMonthlyPayment, a.monthlyIncome); // show the stored value from the server
+        $("calc-msg").innerHTML = "";
+        Object.values(ACTIONS).forEach(x => { $(x.btn).textContent = x.label; });
+        $("calc-btn").textContent = "Calculate monthly payment";
+        updateButtons();
+    }
+
+    function showPayment(payment, income) {
+        const has = payment != null && !isNaN(Number(payment));
+        $("bank-val").textContent = has ? money2(Number(payment)) : "—";
+        income = Number(income) || 0;
+        if (has && income > 0) {
+            const pct = Number(payment) / income * 100;
+            $("ratio-text").textContent = `The payment is ${pct.toFixed(1)}% of monthly salary.`;
+            $("ratio-bar").style.width = Math.min(pct, 100) + "%";
+            $("ratio-bar").style.setProperty("--bar", pct <= 35 ? "var(--ok-dot)" : pct <= 45 ? "var(--dr-dot)" : "var(--no-dot)");
+            $("ratio").classList.remove("hidden");
+        } else {
+            $("ratio").classList.add("hidden");
+        }
+    }
+
+    async function calculate() {
+        if (isLocked(current)) return;
+        const btn = $("calc-btn"), msg = $("calc-msg");
+        updateButtons(true); btn.textContent = "Calculating…"; msg.innerHTML = "";
+        try {
+            let result;
+            if (demoMode) { // sample estimate so the page can be previewed without the backend
+                const P = current.propertyPrice - current.firstPayment, r = 0.04 / 12, n = current.loanTermYears * 12;
+                result = P * r / (1 - Math.pow(1 + r, -n));
+                msg.innerHTML = `<div class="notice" style="margin-top:16px">Sample estimate (4% rate). Real results come from <code>${ENDPOINT}/calc</code>.</div>`;
+            } else {
+                const res = await fetch(`${ENDPOINT}/calc`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(current)
+                });
+                if (!res.ok) throw new Error("Server responded with " + res.status);
+                result = await res.json();
+            }
+            calcResult = result;
+            showPayment(result, current.monthlyIncome);
+        } catch (err) {
+            msg.innerHTML = `<div class="error">Couldn't calculate the payment: ${esc(err.message)}. Check that the app is running, then try again.</div>`;
+        } finally {
+            btn.textContent = "Calculate monthly payment";
+            updateButtons(false);
+        }
+    }
+
+    // Same PUT request for "Save as draft", "Approve" and "Reject" — only the status differs.
+    async function saveWithStatus(status) {
+        if (!current || isLocked(current)) return;
+        const action = ACTIONS[status];
+        const btn = $(action.btn), msg = $("draft-msg");
+        updateButtons(true); btn.textContent = action.busy; msg.innerHTML = "";
+        try {
+            const payload = {
+                ...current,
+                status,
+                expectedMonthlyPayment: calcResult != null ? Math.round(calcResult * 100) / 100 : current.expectedMonthlyPayment,
+                analystComments: $("comments").value
+            };
+            let saved = payload;
+            if (!demoMode) {
+                const res = await fetch(ENDPOINT, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error("Server responded with " + res.status);
+                saved = await res.json();
+            }
+            const i = all.findIndex(a => a.id === current.id);
+            if (i >= 0) all[i] = saved;
+            renderList();
+            renderDetail(saved); // locks the screen if the new status is APPROVED or REJECTED
+            $("draft-msg").innerHTML = `<div class="ok">${action.done}</div>`;
+        } catch (err) {
+            msg.innerHTML = `<div class="error">Couldn't save the application: ${esc(err.message)}. Check that the app is running, then try again.</div>`;
+        } finally {
+            btn.textContent = action.label;
+            updateButtons(false);
+        }
+    }
+
+    /* ---------- routing (#/<id>) ---------- */
+    function route() {
+        const id = decodeURIComponent(location.hash.replace(/^#\/?/, ""));
+        const app = id && all.find(a => a.id === id);
+        $("list-view").classList.toggle("hidden", !!app);
+        $("detail-view").classList.toggle("hidden", !app);
+        if (app) { renderDetail(app); window.scrollTo(0, 0); }
+    }
+
+    function openApp(id) { location.hash = "#/" + encodeURIComponent(id); }
+
+    $("stats").addEventListener("click", e => {
+        const btn = e.target.closest("[data-filter]");
+        if (btn) { filter = btn.dataset.filter; renderList(); }
+    });
+    $("search").addEventListener("input", e => { query = e.target.value; renderRows(); });
+    $("rows").addEventListener("click", e => { const tr = e.target.closest("tr[data-id]"); if (tr) openApp(tr.dataset.id); });
+    $("rows").addEventListener("keydown", e => {
+        if (e.key === "Enter") { const tr = e.target.closest("tr[data-id]"); if (tr) openApp(tr.dataset.id); }
+    });
+    $("back").addEventListener("click", () => { location.hash = ""; });
+    $("calc-btn").addEventListener("click", calculate);
+    $("draft-btn").addEventListener("click", () => saveWithStatus("DRAFT"));
+    $("approve-btn").addEventListener("click", () => saveWithStatus("APPROVED"));
+    $("reject-btn").addEventListener("click", () => saveWithStatus("REJECTED"));
+    window.addEventListener("hashchange", route);
+
+    fetch(ENDPOINT)
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(data => { all = data; })
+        .catch(() => {
+            all = DEMO; demoMode = true;
+            $("notice").innerHTML =
+                `<div class="notice">Couldn't reach <code>${ENDPOINT}</code>, so sample data is shown. Run the Spring app and open this page from the same server.</div>`;
+        })
+        .finally(() => { renderList(); route(); });
 </script>
 </body>
 </html>

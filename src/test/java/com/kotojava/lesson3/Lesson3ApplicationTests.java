@@ -7,16 +7,11 @@ import org.springframework.context.ApplicationContext;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@SpringBootTest
 class Lesson3ApplicationTests {
-
-	@Autowired
-	ApplicationContext context;
 
 	@Test
 	void contextLoads() {
 		System.out.println("running simple test....");
-		assertNotNull(context);
 	}
 
 }

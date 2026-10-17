@@ -1,11 +1,13 @@
 package com.kotojava.lesson3.controller;
 
 import com.kotojava.lesson3.model.LoanApplication;
+import com.kotojava.lesson3.model.LoanStatisticsDto;
 import com.kotojava.lesson3.model.Status;
 import com.kotojava.lesson3.repository.LoanApplicationsRepo;
 import com.kotojava.lesson3.repository.S3Repository;
 import com.kotojava.lesson3.service.LoanCalculator;
 import com.kotojava.lesson3.service.LoanPdfService;
+import com.kotojava.lesson3.service.LoanStatisticsService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +24,7 @@ public class ApplicationController {
     private LoanCalculator loanCalculator;
     private S3Repository s3Repository;
     private LoanPdfService loanPdfService;
+    private LoanStatisticsService loanStatisticsService;
 
     @GetMapping
     public ResponseEntity<List<LoanApplication>> findAll() {
@@ -43,6 +46,11 @@ public class ApplicationController {
     @PostMapping("/calc")
     public ResponseEntity<Double> findAll(@RequestBody LoanApplication loanApplication) {
         return ResponseEntity.ok(loanCalculator.calculate(loanApplication));
+    }
+
+    @PostMapping("/analize")
+    public ResponseEntity<LoanStatisticsDto> getStatus(@RequestBody LoanApplication loanApplication) {
+        return ResponseEntity.ok(loanStatisticsService.calculate(loanApplication));
     }
 
 }

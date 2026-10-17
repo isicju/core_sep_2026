@@ -81,6 +81,10 @@
         .REJECTED { --bg-c: var(--no-bg);  --fg-c: var(--no-fg);  --dot-c: var(--no-dot);  --c: var(--no-dot); }
         .DRAFT    { --bg-c: var(--dr-bg);  --fg-c: var(--dr-fg);  --dot-c: var(--dr-dot);  --c: var(--dr-dot); }
         .ALL      { --c: var(--muted); }
+        /* risk levels (analysis panel) */
+        .LOW      { --bg-c: var(--ok-bg);  --fg-c: var(--ok-fg);  --dot-c: var(--ok-dot); }
+        .MEDIUM   { --bg-c: var(--dr-bg);  --fg-c: var(--dr-fg);  --dot-c: var(--dr-dot); }
+        .HIGH     { --bg-c: var(--no-bg);  --fg-c: var(--no-fg);  --dot-c: var(--no-dot); }
 
         /* detail */
         .back { background: none; border: 0; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; padding: 0; margin-bottom: 18px; }
@@ -121,6 +125,25 @@
         .bar { height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; }
         .bar i { display: block; height: 100%; width: 0; background: var(--bar, var(--ok-dot)); transition: width .4s; }
         .error { color: var(--no-fg); background: var(--no-bg); padding: 10px 14px; border-radius: 10px; margin-top: 16px; font-size: 14px; }
+
+        /* analysis panel */
+        .note { color: var(--muted); font-size: 14px; margin: 0; }
+        .risk-line { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+        .risk-line p { margin: 0; color: var(--muted); font-size: 14px; }
+        .metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+        .metric { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+        .metric small { color: var(--muted); font-size: 13px; display: block; }
+        .metric b { display: block; font-size: 22px; letter-spacing: -0.01em; margin: 2px 0; font-variant-numeric: tabular-nums; }
+        .metric span { color: var(--muted); font-size: 12px; }
+        .split { margin-top: 22px; }
+        .split p { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+        .split-bar { display: flex; height: 14px; border-radius: 99px; overflow: hidden; background: var(--line); }
+        .split-bar i { display: block; height: 100%; }
+        .split-bar .p, .legend .p { background: var(--new-dot); }
+        .split-bar .o, .legend .o { background: var(--dr-dot); }
+        .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 8px; font-size: 13px; color: var(--muted); }
+        .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+
         @media (max-width: 560px) { .compare { grid-template-columns: 1fr; } }
         @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
     </style>
@@ -189,15 +212,30 @@
             </div>
             <div id="calc-msg"></div>
         </div>
+        <div class="panel">
+            <div class="calc-top">
+                <h2>Application analysis</h2>
+                <button class="btn secondary" id="analyze-btn">Analyze application</button>
+            </div>
+            <p class="note" id="analysis-hint">Break this application down into loan cost, affordability and risk.</p>
+            <div class="hidden" id="analysis-result"></div>
+            <div id="analysis-msg"></div>
+        </div>
     </section>
 
 </div>
 
 <script>
     const ENDPOINT = "/loanapplications";
+    const ANALYZE_URL = ENDPOINT + "/analize"; // matches @PostMapping("/analize") in the controller
     const CURRENCY = "EUR"; // change to match your data
     const STATUSES = ["NEW", "APPROVED", "REJECTED", "DRAFT"];
     const LABEL = { NEW: "New", APPROVED: "Approved", REJECTED: "Rejected", DRAFT: "Draft" };
+    const RISK = {
+        LOW:    { label: "Low risk",    note: "The monthly payment is under 30% of income." },
+        MEDIUM: { label: "Medium risk", note: "The monthly payment is between 30% and 40% of income." },
+        HIGH:   { label: "High risk",   note: "The monthly payment is over 40% of income." }
+    };
 
     // The three actions on the detail screen. All of them send the same PUT request;
     // only the status in the payload differs.
@@ -297,6 +335,7 @@
         $("salary-val").textContent = money2(a.monthlyIncome ?? 0);
         showPayment(a.expectedMonthlyPayment, a.monthlyIncome); // show the stored value from the server
         $("calc-msg").innerHTML = "";
+        resetAnalysis();
         Object.values(ACTIONS).forEach(x => { $(x.btn).textContent = x.label; });
         $("calc-btn").textContent = "Calculate monthly payment";
         updateButtons();
@@ -382,6 +421,107 @@
         }
     }
 
+    /* ---------- analysis ---------- */
+    function resetAnalysis() {
+        $("analysis-result").classList.add("hidden");
+        $("analysis-result").innerHTML = "";
+        $("analysis-hint").classList.remove("hidden");
+        $("analysis-msg").innerHTML = "";
+        $("analyze-btn").textContent = "Analyze application";
+    }
+
+    // Same figures the backend's LoanStatisticsService returns; used only when the backend isn't reachable.
+    function demoAnalysis(a) {
+        const price = Number(a.propertyPrice), first = Number(a.firstPayment);
+        const income = Number(a.monthlyIncome), pay = Number(a.expectedMonthlyPayment);
+        const loan = price - first, months = a.loanTermYears * 12;
+        const total = pay * months, over = total - loan, ratio = pay / income;
+        let low = 0, high = 1;
+        for (let i = 0; i < 100; i++) {
+            const mid = (low + high) / 2;
+            if (loan * mid / (1 - Math.pow(1 + mid, -months)) > pay) high = mid; else low = mid;
+        }
+        return {
+            loanAmount: loan, propertyPrice: price, firstPayment: first,
+            downPaymentPercent: first / price * 100, loanToValuePercent: loan / price * 100,
+            loanTermYears: a.loanTermYears, loanTermMonths: months,
+            monthlyIncome: income, expectedMonthlyPayment: pay,
+            paymentToIncomePercent: ratio * 100, remainingMonthlyIncome: income - pay,
+            totalPayout: total, totalOverpayment: over, overpaymentPercent: over / loan * 100,
+            impliedAnnualRatePercent: total <= loan ? 0 : (low + high) / 2 * 1200,
+            riskLevel: ratio > 0.4 ? "HIGH" : ratio > 0.3 ? "MEDIUM" : "LOW"
+        };
+    }
+
+    function renderAnalysis(s) {
+        const risk = RISK[s.riskLevel];
+        const pct = (v, d = 1) => v == null ? "—" : Number(v).toFixed(d) + "%";
+        const eur = v => v == null ? "—" : money2(Number(v));
+        const metric = (label, value, hint = "") =>
+            `<div class="metric"><small>${label}</small><b>${value}</b>${hint ? `<span>${hint}</span>` : ""}</div>`;
+
+        // how much of everything repaid is the loan itself vs. interest
+        const principalShare = (s.loanAmount != null && Number(s.totalPayout) > 0)
+            ? Math.max(0, Math.min(Number(s.loanAmount) / Number(s.totalPayout) * 100, 100))
+            : null;
+
+        $("analysis-result").innerHTML = `
+      ${risk ? `<div class="risk-line"><span class="badge ${esc(s.riskLevel)}">${risk.label}</span><p>${risk.note}</p></div>` : ""}
+      <div class="metrics">
+        ${metric("Loan amount", eur(s.loanAmount), `${pct(s.loanToValuePercent)} of the property price`)}
+        ${metric("Down payment", pct(s.downPaymentPercent), `${eur(s.firstPayment)} of ${eur(s.propertyPrice)}`)}
+        ${metric("Loan term", s.loanTermYears != null ? s.loanTermYears + " years" : "—", s.loanTermMonths != null ? s.loanTermMonths + " monthly payments" : "")}
+        ${metric("Payment vs. income", pct(s.paymentToIncomePercent), `${eur(s.expectedMonthlyPayment)} of ${eur(s.monthlyIncome)}`)}
+        ${metric("Left after payment", eur(s.remainingMonthlyIncome), "per month")}
+        ${metric("Implied interest rate", pct(s.impliedAnnualRatePercent, 2), "per year, estimated from the payment")}
+        ${metric("Total payout", eur(s.totalPayout), "over the whole term")}
+        ${metric("Total overpayment", eur(s.totalOverpayment), `${pct(s.overpaymentPercent)} on top of the loan`)}
+      </div>
+      ${principalShare != null ? `
+      <div class="split">
+        <p>Of every 100 repaid, about ${principalShare.toFixed(0)} goes to the loan itself and ${(100 - principalShare).toFixed(0)} to interest.</p>
+        <div class="split-bar" role="img" aria-label="Loan amount ${principalShare.toFixed(0)}%, interest ${(100 - principalShare).toFixed(0)}%">
+          <i class="p" style="width:${principalShare}%"></i><i class="o" style="width:${100 - principalShare}%"></i>
+        </div>
+        <div class="legend"><span><i class="p"></i>Loan amount</span><span><i class="o"></i>Interest</span></div>
+      </div>` : ""}`;
+        $("analysis-hint").classList.add("hidden");
+        $("analysis-result").classList.remove("hidden");
+    }
+
+    async function analyze() {
+        if (!current) return;
+        const btn = $("analyze-btn"), msg = $("analysis-msg");
+        btn.disabled = true; btn.textContent = "Analyzing…"; msg.innerHTML = "";
+        try {
+            // analyse what is on screen: the calculated payment and the current comment, even if not saved yet
+            const payload = {
+                ...current,
+                expectedMonthlyPayment: calcResult != null ? Math.round(calcResult * 100) / 100 : current.expectedMonthlyPayment,
+                analystComments: $("comments").value
+            };
+            let stats;
+            if (demoMode) {
+                stats = demoAnalysis(payload);
+                msg.innerHTML = `<div class="notice" style="margin-top:16px">Sample figures calculated in the browser. Real results come from <code>${ANALYZE_URL}</code>.</div>`;
+            } else {
+                const res = await fetch(ANALYZE_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error("Server responded with " + res.status);
+                stats = await res.json();
+            }
+            renderAnalysis(stats);
+        } catch (err) {
+            msg.innerHTML = `<div class="error">Couldn't analyze the application: ${esc(err.message)}. Check that the app is running, then try again.</div>`;
+        } finally {
+            btn.disabled = false;
+            btn.textContent = $("analysis-result").classList.contains("hidden") ? "Analyze application" : "Refresh analysis";
+        }
+    }
+
     /* ---------- routing (#/<id>) ---------- */
     function route() {
         const id = decodeURIComponent(location.hash.replace(/^#\/?/, ""));
@@ -404,6 +544,7 @@
     });
     $("back").addEventListener("click", () => { location.hash = ""; });
     $("calc-btn").addEventListener("click", calculate);
+    $("analyze-btn").addEventListener("click", analyze);
     $("draft-btn").addEventListener("click", () => saveWithStatus("DRAFT"));
     $("approve-btn").addEventListener("click", () => saveWithStatus("APPROVED"));
     $("reject-btn").addEventListener("click", () => saveWithStatus("REJECTED"));

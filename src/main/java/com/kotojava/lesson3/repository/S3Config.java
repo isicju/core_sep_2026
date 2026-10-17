@@ -1,5 +1,6 @@
 package com.kotojava.lesson3.repository;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -16,13 +17,20 @@ public class S3Config {
 
     public static final String BUCKET_NAME = "applications";
 
+    @Value("${minio.url}")
+    String minIOUrl;
+    @Value("${minio.user}")
+    String minIOuser;
+    @Value("${minio.password}")
+    String minIOpassword;
+
     @Bean
     public S3Client s3Client() {
         S3Client client = S3Client.builder()
-                .endpointOverride(URI.create("http://158.220.122.4:9000"))
+                .endpointOverride(URI.create(minIOUrl))
                 .region(Region.US_EAST_1)
                 .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create("minioadmin", "minioadmin")))
+                        AwsBasicCredentials.create(minIOuser, minIOpassword)))
                 .serviceConfiguration(S3Configuration.builder()
                         .pathStyleAccessEnabled(true)
                         .build())

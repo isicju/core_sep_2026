@@ -1,8 +1,5 @@
 package com.kotojava.lesson3.repository;
 
-import com.kotojava.lesson3.model.LoanApplication;
-import com.kotojava.lesson3.service.LoanPdfService;
-import com.kotojava.lesson3.service.PdfGeneratorOl;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.core.sync.RequestBody;

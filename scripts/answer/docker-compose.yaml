@@ -1,0 +1,21 @@
+services:
+  mortgage-postgres:
+    image: loandb:0.5
+    container_name: mortgage-postgres
+    environment:
+      POSTGRES_USER: mortgage
+      POSTGRES_PASSWORD: mortgage
+      POSTGRES_DB: mortgage
+    ports:
+      - "5439:5432"
+
+  minio:
+    image: cgr.dev/chainguard/minio:latest
+    container_name: mortgage-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: MAIN_IO_USER
+      MINIO_ROOT_PASSWORD: MAIN_IO_PASSWORD
+    ports:
+      - "9000:9000"
+      - "9001:9001"
